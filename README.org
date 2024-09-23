@@ -4,6 +4,6 @@ A simple example from the raylib docs written in Zig
 
 
 To try, 
-#+end_src bash
+#+begin_src bash
  zig build run
 #+end_src
