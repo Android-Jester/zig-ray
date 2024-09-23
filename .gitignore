@@ -1,0 +1,4 @@
+.ccls-cache/
+.zig-cache/
+raylib/
+zig-out/
