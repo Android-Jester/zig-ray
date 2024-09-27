@@ -8,18 +8,16 @@ const Camera = ry.Camera;
 const CameraProjection = ry.CameraProjection;
 const Color = ry.Color;
 const DEG2RAD: f32 = std.math.pi / 180.0;
-const MAX_COLUMNS = 20;
-
+const MAX_COLUMNS: u8 = 20;
 pub fn main() void {
     const sWidth = 800;
     const sHeight = 800;
-    var cameraMode: CameraMode = ry.CameraMode.camera_first_person;
+    var cameraMode: CameraMode = ry.CameraMode.camera_third_person;
     var heights: [MAX_COLUMNS]i32 = undefined;
     var positions: [MAX_COLUMNS]ry.Vector3 = undefined;
     var colors: [MAX_COLUMNS]ry.Color = undefined;
     ry.initWindow(sWidth, sHeight, "raylib-zig [Core]");
     defer ry.closeWindow();
-
     var camera: Camera = .{
         .position = ry.Vector3{ .x = 0.0, .y = 2.0, .z = 4.0 },
         .target = .{ .x = 0.0, .y = 2.0, .z = 0.0 },
@@ -27,19 +25,17 @@ pub fn main() void {
         .projection = .camera_perspective,
         .up = .{ .x = 0.0, .y = 1.0, .z = 0.0 },
     };
-
     for (0..MAX_COLUMNS) |i| {
         const posx: f32 = @floatFromInt(ry.getRandomValue(-15.0, 15.0));
-        const heightv: f32 = @floatFromInt(heights[i]);
-        // const r =
+        // const heightv: f32 = ;
         heights[i] = ry.getRandomValue(1, 12);
-        positions[i] = .{ .x = posx, .y = heightv / 2.0, .z = posx };
+        positions[i] = .{ .x = posx, .y = @as(f32, @floatFromInt(heights[i])) / 2.0, .z = @floatFromInt(ry.getRandomValue(-15.0, 15.0)) };
         colors[i] = .{ .r = @intCast(ry.getRandomValue(20, 255)), .g = @intCast(ry.getRandomValue(10, 55)), .b = 30, .a = 255 };
+        std.debug.print("[++] Colors: {any}", .{colors[i]});
     }
     ry.disableCursor();
 
     ry.setTargetFPS(30);
-
     while (!ry.windowShouldClose()) {
         if (ry.isKeyPressed(KeyBoard.key_one)) {
             cameraMode = CameraMode.camera_free;
@@ -78,35 +74,11 @@ pub fn main() void {
                 camera.position = .{ .x = 0.0, .y = 2.0, .z = 10.0 };
                 camera.target = .{ .x = 0.0, .y = 2.0, .z = 0.0 };
                 camera.up = .{ .x = 0.0, .y = 1.0, .z = 0.0 };
-                camera.projection = .camera_orthographic;
+                camera.projection = .camera_perspective;
                 camera.fovy = 60.0;
             }
         }
-
         ry.updateCamera(&camera, cameraMode); // Update camera
-
-        // /y
-        //         // Camera PRO usage example (EXPERIMENTAL)
-        //         // This new camera function allows custom movement/rotation values
-        //    to be directly provided
-        //         // as input parameters, with this approach, rcamera module is
-        //    internally independent of raylib inputs UpdateCameraPro(&camera,
-        //             .{
-        //                 (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))*0.1f -      // Move
-        //    forward-backward (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))*0.1f,
-        //                 (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))*0.1f -   // Move
-        //    right-left (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))*0.1f, 0.0 // Move
-        //    up-down
-        //             },
-        //             .{
-        //                 GetMouseDelta().x*0.00,                            //
-        //    Rotation: yaw GetMouseDelta().y*0.00,                            //
-        //    Rotation: pitch 0.0                                                //
-        //    Rotation: roll
-        //             },
-        //             GetMouseWheelMove()*2.0);                              // Move
-        //    to target (zoom)
-        // */
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -121,16 +93,18 @@ pub fn main() void {
         ry.drawCube(.{ .x = -16.0, .y = 2.5, .z = 0.0 }, 1.0, 5.0, 32.0, Color.blue); // Draw a blue wall
         ry.drawCube(.{ .x = 16.0, .y = 2.0, .z = 0.0 }, 1.0, 5.0, 32.0, Color.lime); // Draw a green wall
         ry.drawCube(.{ .x = 0.0, .y = 2.0, .z = 16.0 }, 32.0, 5.0, 1.0, Color.gold); // Draw a yellow wall
+        ry.drawCube(positions[2], 2.0, @floatFromInt(heights[2]), 2.0, colors[2]);
 
         for (0..MAX_COLUMNS) |i| {
-            ry.drawCube(positions[i], 2.0, @floatFromInt(heights[i]), 2.0, colors[i]);
-            ry.drawCubeWires(positions[i], 2.0, @floatFromInt(heights[i]), 2.0, Color.maroon);
+            const height: f32 = @floatFromInt(heights[i]);
+            ry.drawCube(positions[i], 2.0, height, 2.0, colors[i]);
+            ry.drawCubeWires(positions[i], 2.0, height, 2.0, Color.maroon);
         }
 
         // Draw player cube
         if (cameraMode == .camera_third_person) {
-            ry.drawCube(camera.target, 0.0, 0.0, 0.0, Color.purple);
-            ry.drawCubeWires(camera.target, 0.0, 0.0, 0.0, Color.dark_purple);
+            ry.drawCube(camera.target, 0.5, 0.5, 0.5, Color.purple);
+            ry.drawCubeWires(camera.target, 0.5, 0.5, 0.5, Color.dark_purple);
         }
 
         ry.endMode3D();
@@ -139,31 +113,36 @@ pub fn main() void {
         ry.drawRectangle(5, 5, 330, 100, ry.fade(Color.sky_blue, 0.0));
         ry.drawRectangleLines(5, 5, 330, 100, Color.blue);
 
-        // DrawText("Camera controls:", 15, 15, 10, BLACK);
-        // DrawText("- Move keys: W, A, S, D, Space, Left-Ctrl", 15, 30, 10, BLACK);
-        // DrawText("- Look around: arrow keys or mouse", 15, 45, 10, BLACK);
-        // DrawText("- Camera mode keys: 1, 2, 3, 4", 15, 60, 10, BLACK);
-        // DrawText("- Zoom keys: num-plus, num-minus or mouse scroll", 15, 75, 10,
-        //          BLACK);
-        // DrawText("- Camera projection key: P", 15, 90, 10, BLACK);
+        ry.drawText("Camera controls:", 15, 15, 10, Color.black);
+        ry.drawText("- Move keys: W, A, S, D, Space, Left-Ctrl", 15, 30, 10, Color.black);
+        ry.drawText("- Look around: arrow keys or mouse", 15, 45, 10, Color.black);
+        ry.drawText("- Camera mode keys: 1, 2, 3, 4", 15, 60, 10, Color.black);
+        ry.drawText("- Zoom keys: num-plus, num-minus or mouse scroll", 15, 75, 10, Color.black);
+        ry.drawText("- Camera projection key: P", 15, 90, 10, Color.black);
 
-        // DrawRectangle(600, 5, 195, 100, Fade(SKYBLUE, 0.0));
-        // DrawRectangleLines(600, 5, 195, 100, BLUE);
+        ry.drawRectangle(600, 5, 195, 100, ry.fade(Color.sky_blue, 0.0));
+        ry.drawRectangleLines(600, 5, 195, 100, Color.blue);
 
-        // DrawText("Camera status:", 610, 15, 10, BLACK);
-        // DrawText(TextFormat("- Mode: %s",
-        //                     (cameraMode == CAMERA_FREE)           ? "FREE"
-        //                     : (cameraMode == CAMERA_FIRST_PERSON) ? "FIRST_PERSON"
-        //                     : (cameraMode == CAMERA_THIRD_PERSON) ? "THIRD_PERSON"
-        //                     : (cameraMode == CAMERA_ORBITAL)      ? "ORBITAL"
-        //                                                           : "CUSTOM"),
-        //          610, 30, 10, BLACK);
-        // DrawText(
-        //     TextFormat("- Projection: %s",
-        //                (camera.projection == CAMERA_PERSPECTIVE)    ? "PERSPECTIVE"
-        //                : (camera.projection == CAMERA_ORTHOGRAPHIC) ? "ORTHOGRAPHIC"
-        //                                                             : "CUSTOM"),
-        //     610, 45, 10, BLACK);
+        ry.drawText("Camera status:", 610, 15, 10, Color.black);
+
+        var case: [*:0]const u8 = undefined;
+        switch (cameraMode) {
+            .camera_free => case = "FREE",
+            .camera_first_person => case = "FIRST_PERSON",
+            .camera_third_person => case = "THIRD_PERSON",
+            .camera_orbital => case = "ORBITAL",
+            .camera_custom => case = "CUSTOM",
+        }
+        // std.debug.print("TypeInfo: {any}\n\nType: {any}\n", .{ @typeInfo(@TypeOf(case)), @TypeOf(case) });
+        // ry.drawText("[NULL]", 610, 30, 10, Color.black);
+        ry.drawText(ry.textFormat("- Mode: %s", .{case}), 610, 30, 10, Color.black);
+
+        var projec: [*:0]const u8 = undefined;
+        if (camera.projection == .camera_perspective) projec = "PERSPECTIVE" else if (camera.projection == .camera_orthographic) projec = "ORTHOGRAPHIC" else projec = "CUSTOM";
+
+        ry.drawText(ry.textFormat("- Projection: %s", .{projec}), 610, 45, 10, .black);
+        ry.drawText(ry.textFormat("- Position: (%06.3f, %06.3f, %06.3f)", .{ camera.position.x, camera.position.y, camera.position.z }), 610, 75, 10, .black);
+
         // DrawText(TextFormat("- Position: (%06.3f, %06.3f, %06.3f)",
         //                     camera.position.x, camera.position.y,
         //                     camera.position.z),
